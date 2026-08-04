@@ -19,6 +19,12 @@ python rpy_txt_conversor.py --language esp --file ejemplo.txt
 ```
 
 
+## Instalación
+
+No hace falta instalar ningún paquete externo. El código usa solo librerías estándar de Python. Ha sido probado en Python 3.12.
+
 ## Otros
 
 El archivo  `convergence_test.py` sirve de prueba de que las conversiones hechas por el código no degeneran: si transformas un .txt a .rpy y después a .txt de nuevo y finalmente a un segundo .rpy, los dos archivos .rpy serán idénticos. Tanto con el código para texto en español como en inglés.
+
+
