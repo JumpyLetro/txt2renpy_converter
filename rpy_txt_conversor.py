@@ -19,17 +19,20 @@ def main():
         description="Convert between TXT and Ren'Py RPY files.",
         epilog=(
             "Examples:\n"
-            "  python rpy_txt_conversor.py --input txt --language esp --file ejemplo.txt\n"
-            "  python rpy_txt_conversor.py --input rpy --language eng --file example.rpy"
+            "  python rpy_txt_conversor.py --language esp --file ejemplo.txt\n"
+            "  python rpy_txt_conversor.py --language eng --file example.rpy"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--input", choices=("txt", "rpy"), required=True)
     parser.add_argument("--language", choices=("eng", "esp"), required=True)
     parser.add_argument("--file", required=True)
     args = parser.parse_args()
 
-    METHODS[(args.input, args.language)](args.file)
+    input_type = args.file.rsplit(".", 1)[-1].lower()
+    if input_type not in ("txt", "rpy"):
+        parser.error("--file must end with .txt or .rpy")
+
+    METHODS[(input_type, args.language)](args.file)
 
 
 if __name__ == "__main__":
