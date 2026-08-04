@@ -7,12 +7,15 @@ Ejemplo de uso
 
 ## Uso
 
-Todos los archivos de entrada se leen desde la carpeta donde esté el código.
+Todos los archivos de entrada se leen desde la carpeta donde esté el código. Hay tres variables a especificar:
+
+- `language`: puede ser esp (español) o eng (inglés).
+- `file:` el archivo a leer. En función de si es .txt o .rpy intentará convertirlo al formato opuesto.
 
 ### Ejemplo de cómo convertir TXT español a Ren'Py
 
 ```bash
-python rpy_txt_conversor.py --input txt --language esp --file ejemplo.txt
+python rpy_txt_conversor.py --language esp --file ejemplo.txt
 ```
 
 
