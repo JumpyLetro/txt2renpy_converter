@@ -7,10 +7,15 @@ Ejemplo de uso
 
 ## Uso
 
-Todos los archivos de entrada se leen desde la carpeta `txt_to_renpy/`.
+Todos los archivos de entrada se leen desde la carpeta donde esté el código.
 
 ### Ejemplo de cómo convertir TXT español a Ren'Py
 
 ```bash
 python rpy_txt_conversor.py --input txt --language esp --file ejemplo.txt
 ```
+
+
+## Otros
+
+El archivo  `convergence_test.py` sirve de prueba de que las conversiones hechas por el código no degeneran: si transformas un .txt a .rpy y después a .txt de nuevo y finalmente a un segundo .rpy, los dos archivos .rpy serán idénticos. Tanto con el código para texto en español como en inglés.
