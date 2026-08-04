@@ -18,11 +18,11 @@ def sha256(path):
 
 def check(label, source_txt, first_rpy, restored_txt, second_rpy, txt_to_rpy, rpy_to_txt):
     """Runs TXT -> RPY -> TXT -> RPY and checks byte-for-byte convergence."""
-    txt_to_rpy.txt2rpy(source_txt.name)
+    txt_to_rpy.txt2rpy(source_txt)
     source_txt.with_suffix(".rpy").replace(first_rpy)
-    rpy_to_txt.rpy2txt(first_rpy.name)
+    rpy_to_txt.rpy2txt(first_rpy)
     rpy_to_txt.restored_path(first_rpy).replace(restored_txt)
-    txt_to_rpy.txt2rpy(restored_txt.name)
+    txt_to_rpy.txt2rpy(restored_txt)
     restored_txt.with_suffix(".rpy").replace(second_rpy)
 
     first_hash = sha256(first_rpy)

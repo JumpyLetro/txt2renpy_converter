@@ -1,11 +1,9 @@
 import re
 from pathlib import Path
 
-INPUT_FILENAME = "example.rpy"
 MAX_LINE_CHARS = 120
 USE_TWO_CHARACTER_ALTERNATION = True
 FIRST_PERSON = True
-TXT_DIR = Path(__file__).resolve().parent / "txt_to_renpy"
 
 
 def unesc(text):
@@ -111,8 +109,8 @@ def convert(input_path, output_path, max_line_chars=MAX_LINE_CHARS, use_two_char
 
 
 def rpy2txt(input_filename, max_line_chars=MAX_LINE_CHARS, use_two_character_alternation=USE_TWO_CHARACTER_ALTERNATION, first_person=FIRST_PERSON):
-    """Runs RPY -> TXT using a filename from TXT_DIR."""
-    input_path = TXT_DIR / input_filename
+    """Runs RPY -> TXT using the path received."""
+    input_path = Path(input_filename)
     if not input_path.is_file():
         raise FileNotFoundError(f"RPY file not found: {input_path}")
 
@@ -122,4 +120,4 @@ def rpy2txt(input_filename, max_line_chars=MAX_LINE_CHARS, use_two_character_alt
 
 
 if __name__ == "__main__":
-    rpy2txt(INPUT_FILENAME)
+    rpy2txt("txt_to_renpy/example.rpy")

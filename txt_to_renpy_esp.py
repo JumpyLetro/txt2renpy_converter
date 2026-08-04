@@ -2,12 +2,10 @@ import re
 import unicodedata
 from pathlib import Path
 
-INPUT_FILENAME = "ejemplo.txt"
 MAX_LINE_CHARS = 120
 USE_TWO_CHARACTER_ALTERNATION = True
 PRIMERA_PERSONA = True
 
-TXT_DIR = Path(__file__).resolve().parent / "txt_to_renpy"
 DEFAULT_NAME, DEFAULT_ID = "Personaje", "personaje"
 NARRATOR_NAME, NARRATOR_ID = "Narrador", "narrador"
 VERBS_3P = "dijo|respondio|respondió|contesto|contestó|pregunto|preguntó|exclamo|exclamó|susurro|susurró|grito|gritó"
@@ -127,8 +125,8 @@ def convert(input_path, output_path, max_line_chars=MAX_LINE_CHARS, use_two_char
 
 
 def txt2rpy(input_filename, max_line_chars=MAX_LINE_CHARS, use_two_character_alternation=USE_TWO_CHARACTER_ALTERNATION, primera_persona=PRIMERA_PERSONA):
-    """Runs TXT -> RPY using a filename from TXT_DIR."""
-    input_path = TXT_DIR / input_filename
+    """Runs TXT -> RPY using the path received."""
+    input_path = Path(input_filename)
     if not input_path.is_file():
         raise FileNotFoundError(f"No existe el archivo TXT: {input_path}")
     output_path = input_path.with_suffix(".rpy")
@@ -137,4 +135,4 @@ def txt2rpy(input_filename, max_line_chars=MAX_LINE_CHARS, use_two_character_alt
 
 
 if __name__ == "__main__":
-    txt2rpy(INPUT_FILENAME)
+    txt2rpy("txt_to_renpy/ejemplo.txt")
