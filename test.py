@@ -8,7 +8,13 @@ import rpy_txt_conversor
 
 ROOT_DIR = Path(__file__).resolve().parent
 BASE_DIR = ROOT_DIR / "txt_to_renpy"
-EXAMPLE_COUNT = 5
+EXAMPLE_COUNT = 6
+
+
+def example_file(stem):
+    """Returns the TXT or Markdown example file for a stem."""
+    txt_path = BASE_DIR / f"{stem}.txt"
+    return txt_path if txt_path.exists() else BASE_DIR / f"{stem}.md"
 
 
 def run_conversion(language, source_file, output_file):
@@ -66,8 +72,8 @@ def check_language_similarity(index):
     generated_files = (spanish_rpy, english_rpy)
 
     try:
-        run_conversion("esp", BASE_DIR / f"ejemplo{index}.txt", spanish_rpy)
-        run_conversion("eng", BASE_DIR / f"example{index}.txt", english_rpy)
+        run_conversion("esp", example_file(f"ejemplo{index}"), spanish_rpy)
+        run_conversion("eng", example_file(f"example{index}"), english_rpy)
         return character_block_count(spanish_rpy) == character_block_count(english_rpy)
     finally:
         for generated_file in generated_files:
@@ -80,8 +86,8 @@ def main():
     english_checks = []
     similarity_checks = []
     for index in range(1, EXAMPLE_COUNT + 1):
-        spanish_checks.append(check("esp", BASE_DIR / f"ejemplo{index}.txt"))
-        english_checks.append(check("eng", BASE_DIR / f"example{index}.txt"))
+        spanish_checks.append(check("esp", example_file(f"ejemplo{index}")))
+        english_checks.append(check("eng", example_file(f"example{index}")))
         similarity_checks.append(check_language_similarity(index))
 
     print(f"TEST convergencia: superado en {sum(spanish_checks)}/{len(spanish_checks)} archivos en español.")
