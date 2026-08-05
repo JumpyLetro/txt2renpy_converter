@@ -14,25 +14,27 @@ METHODS = {
 }
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Convert between TXT and Ren'Py RPY files.",
         epilog=(
             "Examples:\n"
             "  python rpy_txt_conversor.py --language esp --file ejemplo.txt\n"
-            "  python rpy_txt_conversor.py --language eng --file example.rpy"
+            "  python rpy_txt_conversor.py --language eng --file example.rpy\n"
+            "  python rpy_txt_conversor.py --language esp --file ejemplo.txt --output salida.rpy"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--language", choices=("eng", "esp"), required=True)
     parser.add_argument("--file", required=True)
-    args = parser.parse_args()
+    parser.add_argument("--output", help="Output file name/path. If omitted, a default name is generated.")
+    args = parser.parse_args(argv)
 
     input_type = args.file.rsplit(".", 1)[-1].lower()
     if input_type not in ("txt", "rpy"):
         parser.error("--file must end with .txt or .rpy")
 
-    METHODS[(input_type, args.language)](args.file)
+    METHODS[(input_type, args.language)](args.file, output_filename=args.output)
 
 
 if __name__ == "__main__":

@@ -11,6 +11,8 @@ NARRATOR_NAME, NARRATOR_ID = "Narrator", "narrator"
 VERBS_3P = "said|replied|answered|asked|exclaimed|whispered|shouted|cried|muttered"
 VERBS_1P = "said|replied|answered|asked|exclaimed|whispered|shouted|cried|muttered"
 PRONOUNS = "he|she|they|we|it|i|you"
+OPEN_QUOTE_MARKERS = ('"', "“", "``", "''")
+CLOSE_QUOTE_MARKERS = ('"', "”", "''", "\u00b4\u00b4")
 
 
 def esc(text):
@@ -32,10 +34,37 @@ def clean_name(name):
     return name[:1].upper() + name[1:] if name else DEFAULT_NAME
 
 
+def quote_marker(line):
+    """Returns the opening quote marker used by a line, if any."""
+    stripped = line.lstrip()
+    return next((marker for marker in OPEN_QUOTE_MARKERS if stripped.startswith(marker)), None)
+
+
+def quoted_parts(line):
+    """Extracts quoted text, attribution tail and whether the quote closes."""
+    stripped = line.lstrip()
+    opening = quote_marker(stripped)
+    if not opening:
+        return None, "", False
+
+    text = stripped[len(opening):]
+    closing_positions = [
+        (index, marker)
+        for marker in CLOSE_QUOTE_MARKERS
+        if (index := text.find(marker)) != -1
+    ]
+    if not closing_positions:
+        return text.strip(), "", False
+
+    close_index, closing = min(closing_positions)
+    tail = text[close_index + len(closing):].lstrip(" ,")
+    return text[:close_index].strip(), tail.strip(), True
+
+
 def after_quote(line):
     """Returns the attribution text after a quoted dialogue, if present."""
-    match = re.match(r'^\s*["“](.*?)["”]\s*,?\s*(.*)$', line)
-    return match.group(2).strip() if match else ""
+    _, tail, closed = quoted_parts(line)
+    return tail if closed else ""
 
 
 def speaker(line):
@@ -54,9 +83,9 @@ def speaker(line):
 
 def spoken(line):
     """Extracts the actual spoken text from a quoted or dash dialogue line."""
-    quote = re.match(r'^\s*["“](.*?)["”]', line)
-    if quote:
-        return quote.group(1).strip()
+    quote_text, _, _ = quoted_parts(line)
+    if quote_text is not None:
+        return quote_text
     return line[1:].strip() if line.startswith(("—", "-")) else None
 
 
@@ -116,34 +145,66 @@ def convert(input_path, output_path, max_line_chars=MAX_LINE_CHARS, use_two_char
     out += ["", "label start:"]
     previous = visible = None
 
-    for line in lines:
+    def emit_dialogue(ident, text, expr):
+        nonlocal visible
+        if ident != visible and not (first_person and ident == NARRATOR_ID):
+            out.extend(([f"    hide {visible}"] if visible else []) + [f"    show {ident} {expr}"])
+            visible = ident
+        out.extend(f'    {ident} "{esc(end_dialogue(part))}"' for part in split_text(text, max_line_chars))
+
+    index = 0
+    while index < len(lines):
+        line = lines[index]
         if not line:
             if out[-1]:
                 out.append("")
+            index += 1
             continue
         text = spoken(line)
         if text is None:
             out += [f'    "{esc(part)}"' for part in split_text(line, max_line_chars)]
+            index += 1
             continue
-        ident = resolve(speaker(line), chars, previous, use_two_character_alternation)
-        if ident != visible and not (first_person and ident == NARRATOR_ID):
-            out += ([f"    hide {visible}"] if visible else []) + [f"    show {ident} {expression(line)}"]
-            visible = ident
-        out += [f'    {ident} "{esc(end_dialogue(part))}"' for part in split_text(text, max_line_chars)]
+
+        block = [line]
+        _, _, quote_closed = quoted_parts(line)
+        index += 1
+        while not quote_closed and index < len(lines):
+            next_index = index
+            while next_index < len(lines) and not lines[next_index]:
+                next_index += 1
+            if next_index >= len(lines) or not quote_marker(lines[next_index]):
+                break
+            block.append(lines[next_index])
+            _, _, quote_closed = quoted_parts(lines[next_index])
+            index = next_index + 1
+
+        block_speakers = [speaker(block_line) for block_line in block]
+        explicit_speaker = next((name for name in reversed(block_speakers) if name), None)
+        if explicit_speaker:
+            ident = resolve(explicit_speaker, chars, previous, use_two_character_alternation)
+        else:
+            ident = resolve(None, chars, previous, use_two_character_alternation)
+
+        expr = expression(next((block_line for block_line in reversed(block) if speaker(block_line)), block[0]))
+        for block_line in block:
+            emit_dialogue(ident, spoken(block_line), expr)
         previous = ident
 
+    while out and not out[-1]:
+        out.pop()
     output_path.write_text("\n".join(out + ["", "    return", ""]), encoding="utf-8")
 
 
-def txt2rpy(input_filename, max_line_chars=MAX_LINE_CHARS, use_two_character_alternation=USE_TWO_CHARACTER_ALTERNATION, first_person=FIRST_PERSON):
+def txt2rpy(input_filename, output_filename=None, max_line_chars=MAX_LINE_CHARS, use_two_character_alternation=USE_TWO_CHARACTER_ALTERNATION, first_person=FIRST_PERSON):
     """Runs TXT -> RPY using the path received."""
     input_path = Path(input_filename)
     if not input_path.is_file():
         raise FileNotFoundError(f"TXT file not found: {input_path}")
-    output_path = input_path.with_suffix(".rpy")
+    output_path = Path(output_filename) if output_filename else input_path.with_suffix(".rpy")
     convert(input_path, output_path, max_line_chars, use_two_character_alternation, first_person)
     print(f"Converted: {input_path} -> {output_path}")
 
 
 if __name__ == "__main__":
-    txt2rpy("txt_to_renpy/example.txt")
+    txt2rpy("txt_to_renpy/example2.txt")

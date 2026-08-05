@@ -56,15 +56,25 @@ def quote_for_attribution(text):
     return f'"{text}"' if text.endswith(("!", "?", "...")) else f'"{text},"'
 
 
-def dialogue(line, chars, visible_expr):
-    """Converts a Ren'Py dialogue line into English prose dialogue."""
+def dialogue_parts(line, chars):
+    """Returns the speaker id and text from a Ren'Py dialogue line."""
     match = re.match(r"\s*(\w+)\s+\"((?:\\\"|[^\"])*)\"", line)
     if not match or match.group(1) not in chars:
         return None
 
-    speaker_id, text = match.group(1), text_before_attribution(unesc(match.group(2)))
+    return match.group(1), unesc(match.group(2))
+
+
+def is_identified_speaker(speaker_id, chars):
+    """Checks whether a speaker should have consecutive dialogue lines merged."""
+    return chars[speaker_id].lower() != "character"
+
+
+def dialogue(speaker_id, text, chars, expression):
+    """Converts English dialogue data into prose dialogue."""
+    text = text_before_attribution(text)
     name = chars[speaker_id]
-    expression = readable_expression(visible_expr.get(speaker_id))
+    expression = readable_expression(expression)
 
     if name.lower() == "narrator":
         return f"{quote_for_attribution(text)} I said"
@@ -86,38 +96,68 @@ def convert(input_path, output_path, max_line_chars=MAX_LINE_CHARS, use_two_char
     lines = input_path.read_text(encoding="utf-8-sig").splitlines()
     chars = character_map(lines)
     out, visible_expr = [], {}
+    pending_dialogue = None
+
+    def flush_dialogue():
+        nonlocal pending_dialogue
+        if not pending_dialogue:
+            return
+        speaker_id, parts, expression = pending_dialogue
+        out.append(dialogue(speaker_id, " ".join(parts), chars, expression))
+        pending_dialogue = None
 
     for line in lines:
         shown_id, expr = show_state(line)
         if shown_id:
+            if pending_dialogue and pending_dialogue[0] == shown_id and pending_dialogue[2] != expr:
+                flush_dialogue()
             visible_expr[shown_id] = expr
             continue
         if not line.strip():
+            flush_dialogue()
             if out and out[-1]:
                 out.append("")
             continue
         if is_control(line):
+            flush_dialogue()
             continue
 
-        text = dialogue(line, chars, visible_expr) or quoted_text(line)
+        parts = dialogue_parts(line, chars)
+        if parts:
+            speaker_id, text = parts
+            expression = visible_expr.get(speaker_id)
+            if is_identified_speaker(speaker_id, chars):
+                if pending_dialogue and pending_dialogue[0] == speaker_id and pending_dialogue[2] == expression:
+                    pending_dialogue[1].append(text)
+                else:
+                    flush_dialogue()
+                    pending_dialogue = (speaker_id, [text], expression)
+            else:
+                flush_dialogue()
+                out.append(dialogue(speaker_id, text, chars, expression))
+            continue
+
+        flush_dialogue()
+        text = quoted_text(line)
         if text:
             out.append(text)
 
+    flush_dialogue()
     while out and not out[-1]:
         out.pop()
     output_path.write_text("\n".join(out) + "\n", encoding="utf-8")
 
 
-def rpy2txt(input_filename, max_line_chars=MAX_LINE_CHARS, use_two_character_alternation=USE_TWO_CHARACTER_ALTERNATION, first_person=FIRST_PERSON):
+def rpy2txt(input_filename, output_filename=None, max_line_chars=MAX_LINE_CHARS, use_two_character_alternation=USE_TWO_CHARACTER_ALTERNATION, first_person=FIRST_PERSON):
     """Runs RPY -> TXT using the path received."""
     input_path = Path(input_filename)
     if not input_path.is_file():
         raise FileNotFoundError(f"RPY file not found: {input_path}")
 
-    output_path = restored_path(input_path)
+    output_path = Path(output_filename) if output_filename else restored_path(input_path)
     convert(input_path, output_path, max_line_chars, use_two_character_alternation, first_person)
     print(f"Restored: {input_path} -> {output_path}")
 
 
 if __name__ == "__main__":
-    rpy2txt("txt_to_renpy/example.rpy")
+    rpy2txt("txt_to_renpy/example1.rpy")
